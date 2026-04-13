@@ -2,7 +2,7 @@
 
 // CONFIGURACIÓN: URL del Webhook "Deploy as web app"
 // ID de Librería futura referencia: https://script.google.com/macros/library/d/1wiOg84nIthLICtC12y0uOdjSjpUbkATUwROgHykAUogvXTznv7XOXU2-/2
-const APPSCRIPT_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbxmA9ZbCM7iHU2aF3ad1Dush1cbAq5OZ7XtY-Nqz7zz1NGSWwwf9DdQ8ZF4_yUYcNXlrQ/exec";
+const APPSCRIPT_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbwlql4RHa3Fw1EAPk751Yk7qNKq-rS8JqLX2eFq2ywG1xJ_9mECBN6hzhFjXPuO2Yrxqw/exec";
 
 document.addEventListener("DOMContentLoaded", () => {
     const form = document.getElementById("es9-form");
@@ -98,9 +98,12 @@ Estructura deseada:
             
             if (result.candidates && result.candidates[0].content.parts[0].text) {
                 let rawText = result.candidates[0].content.parts[0].text;
-                rawText = rawText.replace(/\`\`\`json/g, "").replace(/\`\`\`/g, "").trim();
                 
-                const parsed = JSON.parse(rawText);
+                // Limpieza fuerte: buscar lo que esté entre las llaves { }
+                const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+                if (!jsonMatch) throw new Error("No JSON object found");
+                
+                const parsed = JSON.parse(jsonMatch[0]);
                 
                 if (Array.isArray(parsed.feedbackEmprendedor)) {
                     parsed.feedbackEmprendedor = parsed.feedbackEmprendedor.map(v => "- " + v).join("\n");
@@ -184,6 +187,11 @@ Estructura deseada:
             const mainTitle = document.getElementById("main-title");
             if (mainTitle) {
                 mainTitle.textContent = "¡Tu proyecto ha sido registrado con éxito!";
+            }
+            
+            const mainSubtitle = document.getElementById("main-subtitle");
+            if (mainSubtitle) {
+                mainSubtitle.textContent = "Tu progreso se guarda automáticamente en este dispositivo para que puedas actualizar la información si decides usar tu segunda oportunidad. En tu email recibirás tu One-Pager con una pre-evaluación de Idalí para ayudarte a mejorar.";
             }
 
             // Mostrar el cuadro de éxito
