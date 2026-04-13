@@ -115,11 +115,11 @@ Estructura deseada:
             }
         } catch (e) {
             console.error("Error en Gemini Frontend:", e);
-            // Fallback object
+            // Fallback object con detalle del error
             return {
                 score: 0,
                 resumenTecnico: "Aviso: No pudimos conectar con la IA para la evaluación técnica. " + e.message,
-                feedbackEmprendedor: "- Tuvimos un problema técnico evaluando tu propuesta.\n- Sin embargo, tu solicitud fue guardada con éxito.\n- Te informaremos de tus resultados en breve."
+                feedbackEmprendedor: "- Tuvimos un problema técnico evaluando tu propuesta.\n- Motivo del fallo: " + e.message + "\n- Tip: Revisa la consola (F12) o si el modelo/API Key de Gemini está activo.\n- Tu solicitud fue registrada con éxito."
             };
         }
     }
@@ -201,8 +201,8 @@ Estructura deseada:
             // Ocultar por completo el formulario para que no genere confusión
             form.style.display = 'none';
             
-            // Limpiar localStorage SOLAMENTE SI FUE EXITOSO
-            localStorage.removeItem(formKey);
+            // Ya NO limpiamos el localStorage para permitir la "Segunda Oportunidad"
+            // localStorage.removeItem(formKey);
 
         } catch (error) {
             console.error("Error submitting form:", error);
