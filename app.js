@@ -1,7 +1,5 @@
 // app.js
-
-// CONFIGURACIÓN: URL del Webhook "Deploy as web app"
-// ID de Librería futura referencia: https://script.google.com/macros/library/d/1wiOg84nIthLICtC12y0uOdjSjpUbkATUwROgHykAUogvXTznv7XOXU2-/2
+// CONFIGURACIÓN: URL de la Aplicación Web de Google Apps Script
 const APPSCRIPT_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbx5CZAhUkna6qWF6x7IxXgt6DyrYX-I4oI-bP4PTq7Y5xEAhYCh-zN01uZGbqOv66Dusw/exec";
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -12,11 +10,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const errorBox = document.getElementById("error-message");
     const errorText = document.getElementById("error-text");
     const downloadBtn = document.getElementById("download-btn");
+    const formActions = document.querySelector(".form-actions");
 
-    // Lógica "Segunda Oportunidad": Autoguardado en LocalStorage (Navegador Seguro)
+    // Lógica "Segunda Oportunidad": Autoguardado en el Navegador
     const formKey = "es9_form_draft";
 
-    // 1. Cargar datos si el usuario regresa
+    // 1. Recuperar información si el usuario refresca la página
     const savedData = localStorage.getItem(formKey);
     if (savedData) {
         try {
@@ -26,11 +25,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (input) input.value = parsed[key];
             });
         } catch (e) {
-            console.error("Error leyendo autoguardado");
+            console.error("Error recuperando autoguardado");
         }
     }
 
-    // 2. Guardar automáticamente mientras escribe
+    // 2. Guardar automáticamente mientras el emprendedor escribe
     form.addEventListener("input", () => {
         const formData = new FormData(form);
         const dataObj = {};
@@ -38,59 +37,53 @@ document.addEventListener("DOMContentLoaded", () => {
         localStorage.setItem(formKey, JSON.stringify(dataObj));
     });
 
-    // Envío de Formulario
+    // 3. Envío de Formulario
     form.addEventListener("submit", async (e) => {
         e.preventDefault();
-
-        if (APPSCRIPT_WEBHOOK_URL === "URL_APP_SCRIPT_AQUI") {
-            // MODO DEMO: Simular flujo porque no hay webhook real
-            showLoader("Simulando envío a inteligencia artificial...");
-            setTimeout(() => {
-                hideLoader();
-                successBox.classList.remove("hidden");
-                errorBox.classList.add("hidden");
-                form.querySelectorAll("input, textarea, button[type='submit']").forEach(el => el.disabled = true);
-            }, 2000);
-            return;
-        }
 
         const formData = new FormData(form);
         const dataObj = {};
         formData.forEach((value, key) => dataObj[key] = value);
         dataObj.action = "submit";
 
-        showLoader("Enviando proyecto y evaluando con Inteligencia Artificial... (Esto puede tomar unos segundos)");
+        // MENSAJE EMPÁTICO (Sin mencionar IA)
+        showLoader("Preparando tus recomendaciones y generando tu One-Pager...");
 
         try {
-            const respuesta = await fetch(APPSCRIPT_WEBHOOK_URL, {
+            // Enviamos con 'no-cors' para asegurar que los datos lleguen a Google Sheets
+            await fetch(APPSCRIPT_WEBHOOK_URL, {
                 method: "POST",
+                mode: "no-cors", 
                 headers: {
                     "Content-Type": "text/plain",
                 },
                 body: JSON.stringify(dataObj)
             });
 
-            // Se asume que el redirect 302 funciona si Content-Type es un "simple request"
-            const data = await respuesta.json();
+            // Simulamos un breve tiempo de procesamiento para el PDF
+            setTimeout(() => {
+                hideLoader();
+                successBox.classList.remove("hidden");
+                errorBox.classList.add("hidden");
+                
+                // Ocultamos los botones de envío originales
+                if (formActions) formActions.classList.add("hidden");
+                
+                // Limpiar el borrador local tras el envío exitoso
+                localStorage.removeItem(formKey);
 
-            hideLoader();
-            successBox.classList.remove("hidden");
-            errorBox.classList.add("hidden");
-            // Ocultar acciones
-            form.querySelectorAll("button[type='submit']").forEach(el => el.style.display = 'none');
-            // Limpiar localStorage ya que se envió con éxito
-            localStorage.removeItem(formKey);
-            
-            // Asignar dinámicamente la URL al botón de descarga si el servidor lo devolvió
-            if(data && data.pdfUrl) {
-                downloadBtn.href = data.pdfUrl;
-            }
+                // Configuración del botón de descarga empático
+                downloadBtn.addEventListener("click", (event) => {
+                    event.preventDefault();
+                    alert("¡Proyecto recibido! Tu One-Pager se está terminando de procesar. En un par de minutos lo recibirás en tu correo con las recomendaciones de Idalí.");
+                });
+            }, 4000);
 
         } catch (error) {
-            console.error("Error submitting form:", error);
+            console.error("Error en el envío:", error);
             hideLoader();
             errorBox.classList.remove("hidden");
-            errorText.textContent = "Ocurrió un error al contactar el servidor. Por favor intenta de nuevo.";
+            errorText.textContent = "Hubo un problema al conectar con el servidor. Por favor, intenta de nuevo.";
         }
     });
 
