@@ -1,6 +1,7 @@
 // app.js
 
-// CONFIGURACIÓN: Aquí debes colocar la URL web que te de Google Apps Script al hacer "Deploy as web app" (Ejecución como tú, acceso: cualquiera)
+// CONFIGURACIÓN: URL del Webhook "Deploy as web app"
+// ID de Librería futura referencia: https://script.google.com/macros/library/d/1wiOg84nIthLICtC12y0uOdjSjpUbkATUwROgHykAUogvXTznv7XOXU2-/2
 const APPSCRIPT_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbx5CZAhUkna6qWF6x7IxXgt6DyrYX-I4oI-bP4PTq7Y5xEAhYCh-zN01uZGbqOv66Dusw/exec";
 
 document.addEventListener("DOMContentLoaded", () => {
