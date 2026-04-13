@@ -41,7 +41,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Función para evaluar con Gemini directamente desde el Frontend
     async function evaluarConGeminiFrontend(data) {
         const apiKey = "AIzaSyAFgRR7o4tPle3ERbVUCllRe3NeCjd1yMM"; // GEMINI API KEY
-        const modelName = "gemini-2.0-flash";
+        const modelName = "gemini-1.5-flash";
         
         const promptText = `Actúa como un Evaluador Experto de Negocios Sociales e Innovación. Evalúa el siguiente proyecto registrado para "Emprende por un Cambio Social".
 
