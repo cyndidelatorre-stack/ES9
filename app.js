@@ -2,7 +2,7 @@
 
 // CONFIGURACIÓN: URL del Webhook "Deploy as web app"
 // ID de Librería futura referencia: https://script.google.com/macros/library/d/1wiOg84nIthLICtC12y0uOdjSjpUbkATUwROgHykAUogvXTznv7XOXU2-/2
-const APPSCRIPT_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbyowSo7722z4WhY1FWkVODPxIXM-mLzrPVbbPimeNiHz4ws0qBX-eY5uMKRWRb9VWfrsQ/exec";
+const APPSCRIPT_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbwYHoDUIJpCcm_RWC-jRV4NehgstKUp7F-O958JIze7vsI6JhYXAu7ORZ3ZIhDucJLqEA/exec";
 
 document.addEventListener("DOMContentLoaded", () => {
     const form = document.getElementById("es9-form");
@@ -38,6 +38,89 @@ document.addEventListener("DOMContentLoaded", () => {
         localStorage.setItem(formKey, JSON.stringify(dataObj));
     });
 
+    // Función para evaluar con Gemini directamente desde el Frontend
+    async function evaluarConGeminiFrontend(data) {
+        const apiKey = "AIzaSyAFgRR7o4tPle3ERbVUCllRe3NeCjd1yMM"; // GEMINI API KEY
+        const modelName = "gemini-2.0-flash";
+        
+        const promptText = `Actúa como un Evaluador Experto de Negocios Sociales e Innovación. Evalúa el siguiente proyecto registrado para "Emprende por un Cambio Social".
+
+PROYECTO:
+- Nombre: ${data.nombre_proyecto}
+- Objetivo: ${data.objetivo}
+- Problema: ${data.q1_1} | Evidencia: ${data.q1_2}
+- Propuesta D.: ${data.q2_1} | Solución: ${data.q2_2}
+- Innovación: ${data.q3_1} | ${data.q3_2}
+- Beneficiarios: ${data.q4_1} | Ingresos/Costos: ${data.q7_2} | ${data.q7_1}
+- Sostenibilidad: ${data.q8_1} | Sueño: ${data.q8_4}
+
+TAREAS:
+1. Genera un "feedbackEmprendedor" en tono INSPIRADOR de 3 a 4 viñetas accionables (COMO UN ARREGLO DE STRINGS). OBLIGATORIO: Una viñeta debe sugerir salir a hablar con beneficiarios o expertos del problema y por qué.
+2. Evalúa y genera un score (0-100) basado en 4 pilares: Claridad del Problema (25), Innovación (25), Viabilidad (25), Resultados (25).
+3. Genera un "resumenTecnico" (1 párrafo) para el equipo evaluador justificando el score.
+
+REGLA: Tu respuesta DEBE ser estrictamente un objeto JSON válido (sin sintaxis extra de markdown).
+Estructura deseada:
+{
+  "score": 85,
+  "resumenTecnico": "El proyecto demuestra excelente claridad pero falla en X...",
+  "feedbackEmprendedor": [
+    "Viñeta 1",
+    "Viñeta 2",
+    "Viñeta 3 (Ve a hablar con tus usuarios sobre...)"
+  ]
+}`;
+
+        const payload = {
+            contents: [{ parts: [{ text: promptText }] }],
+            generationConfig: {
+                temperature: 0.7,
+                responseMimeType: "application/json"
+            }
+        };
+
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+
+        try {
+            const response = await fetch(endpoint, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                throw new Error("HTTP Status " + response.status);
+            }
+
+            const result = await response.json();
+            
+            if (result.candidates && result.candidates[0].content.parts[0].text) {
+                let rawText = result.candidates[0].content.parts[0].text;
+                rawText = rawText.replace(/\`\`\`json/g, "").replace(/\`\`\`/g, "").trim();
+                
+                const parsed = JSON.parse(rawText);
+                
+                if (Array.isArray(parsed.feedbackEmprendedor)) {
+                    parsed.feedbackEmprendedor = parsed.feedbackEmprendedor.map(v => "- " + v).join("\n");
+                }
+                
+                return parsed;
+            } else {
+                throw new Error("Estructura de respuesta inválida");
+            }
+        } catch (e) {
+            console.error("Error en Gemini Frontend:", e);
+            // Fallback object
+            return {
+                score: 0,
+                resumenTecnico: "Aviso: No pudimos conectar con la IA para la evaluación técnica. " + e.message,
+                feedbackEmprendedor: "- Tuvimos un problema técnico evaluando tu propuesta.\n- Sin embargo, tu solicitud fue guardada con éxito.\n- Te informaremos de tus resultados en breve."
+            };
+        }
+    }
+
     // Envío de Formulario
     form.addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -63,7 +146,17 @@ document.addEventListener("DOMContentLoaded", () => {
         form.querySelectorAll("input, textarea, button[type='submit']").forEach(el => el.disabled = true);
         errorBox.classList.add("hidden");
 
-        showLoader("Preparando tus recomendaciones y generando tu One-Pager...");
+        // FASE 1: Gemini en Web
+        showLoader("Evaluando tu propuesta con Inteligencia Artificial...");
+        
+        const iaResult = await evaluarConGeminiFrontend(dataObj);
+        // Inject results into payload
+        dataObj.ia_score = iaResult.score;
+        dataObj.ia_resumenTecnico = iaResult.resumenTecnico;
+        dataObj.ia_feedbackEmprendedor = iaResult.feedbackEmprendedor;
+
+        // FASE 2: Enviar a Google Apps Script
+        showLoader("Generando One-Pager y guardando registro...");
 
         try {
             const respuesta = await fetch(APPSCRIPT_WEBHOOK_URL, {
@@ -91,8 +184,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 localStorage.removeItem(formKey);
                 
                 // Asignar PDF dinámico
-                if(data.pdfUrl) {
+                if(data.pdfUrl && data.pdfUrl !== "Error generando documento PDF") {
                     downloadBtn.href = data.pdfUrl;
+                } else {
+                    downloadBtn.style.display = "none";
                 }
             } else {
                 throw new Error("Respuesta inválida del servidor");
@@ -102,7 +197,7 @@ document.addEventListener("DOMContentLoaded", () => {
             console.error("Error submitting form:", error);
             hideLoader();
             errorBox.classList.remove("hidden");
-            errorText.textContent = "Ocurrió un error al enviar el formulario (Red o permisos denegados). Por favor verifica tu URL.";
+            errorText.textContent = "Ocurrió un error al guardar tu proyecto (Red o permisos denegados).";
             form.querySelectorAll("input, textarea, button[type='submit']").forEach(el => el.disabled = false);
         }
     });
