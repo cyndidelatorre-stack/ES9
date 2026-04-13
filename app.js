@@ -5,8 +5,6 @@ const APPSCRIPT_WEBHOOK_URL = "URL_APP_SCRIPT_AQUI";
 
 document.addEventListener("DOMContentLoaded", () => {
     const form = document.getElementById("es9-form");
-    const fetchBtn = document.getElementById("btn-fetch");
-    const emailInput = document.getElementById("email");
     const loader = document.getElementById("loader");
     const loaderText = document.getElementById("loader-text");
     const successBox = document.getElementById("success-message");
@@ -14,43 +12,29 @@ document.addEventListener("DOMContentLoaded", () => {
     const errorText = document.getElementById("error-text");
     const downloadBtn = document.getElementById("download-btn");
 
-    // Lógica "Segunda Oportunidad": Traer datos existentes por correo
-    fetchBtn.addEventListener("click", async () => {
-        const email = emailInput.value.trim();
-        if (!email) {
-            alert("Por favor ingresa un correo electrónico primero.");
-            return;
-        }
-
-        if (APPSCRIPT_WEBHOOK_URL === "URL_APP_SCRIPT_AQUI") {
-            alert("La URL de integración (Webhook) aún no está configurada.");
-            return;
-        }
-
-        showLoader("Buscando tus respuestas anteriores...");
-        
+    // Lógica "Segunda Oportunidad": Autoguardado en LocalStorage (Navegador Seguro)
+    const formKey = "es9_form_draft";
+    
+    // 1. Cargar datos si el usuario regresa
+    const savedData = localStorage.getItem(formKey);
+    if(savedData) {
         try {
-            const url = new URL(APPSCRIPT_WEBHOOK_URL);
-            url.searchParams.append("action", "fetch");
-            url.searchParams.append("email", email);
-
-            const respuesta = await fetch(url);
-            const data = await respuesta.json();
-            
-            if (data.status === "success" && data.data) {
-                // Rellenar formulario
-                fillForm(data.data);
-                hideLoader();
-                alert("¡Felicidades! Encontramos tu progreso. Puedes editar tus respuestas y enviar de nuevo.");
-            } else {
-                hideLoader();
-                alert("No encontramos proyectos previos con este correo. Puedes continuar con tu registro nuevo.");
-            }
-        } catch (error) {
-            console.error("Error fetching data:", error);
-            hideLoader();
-            alert("Error al intentar recuperar tu información.");
+            const parsed = JSON.parse(savedData);
+            Object.keys(parsed).forEach(key => {
+                const input = form.querySelector(`[name="${key}"]`);
+                if (input) input.value = parsed[key];
+            });
+        } catch (e) {
+            console.error("Error leyendo autoguardado");
         }
+    }
+
+    // 2. Guardar automáticamente mientras escribe
+    form.addEventListener("input", () => {
+        const formData = new FormData(form);
+        const dataObj = {};
+        formData.forEach((value, key) => dataObj[key] = value);
+        localStorage.setItem(formKey, JSON.stringify(dataObj));
     });
 
     // Envío de Formulario
@@ -96,6 +80,8 @@ document.addEventListener("DOMContentLoaded", () => {
             errorBox.classList.add("hidden");
             // Ocultar acciones
             form.querySelectorAll("button[type='submit']").forEach(el => el.style.display = 'none');
+            // Limpiar localStorage ya que se envió con éxito
+            localStorage.removeItem(formKey);
             
             // Si el backend devolviera el link de PDF de forma síncrona aquí lo inyectaríamos
             // downloadBtn.href = data.pdfUrl;
@@ -107,15 +93,6 @@ document.addEventListener("DOMContentLoaded", () => {
             errorText.textContent = "Ocurrió un error al contactar el servidor. Por favor intenta de nuevo.";
         }
     });
-
-    function fillForm(data) {
-        Object.keys(data).forEach(key => {
-            const input = form.querySelector(`[name="${key}"]`);
-            if (input) {
-                input.value = data[key];
-            }
-        });
-    }
 
     function showLoader(msg) {
         loaderText.textContent = msg;
