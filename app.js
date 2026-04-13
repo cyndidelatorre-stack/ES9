@@ -2,7 +2,7 @@
 
 // CONFIGURACIÓN: URL del Webhook "Deploy as web app"
 // ID de Librería futura referencia: https://script.google.com/macros/library/d/1wiOg84nIthLICtC12y0uOdjSjpUbkATUwROgHykAUogvXTznv7XOXU2-/2
-const APPSCRIPT_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbx_RgGeCGzLZiDY75wUzSrAM6IKB42TmlgjI5LGtcp25SYOWHhwqnACLyMnu0gqnZoe6A/exec";
+const APPSCRIPT_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbxmA9ZbCM7iHU2aF3ad1Dush1cbAq5OZ7XtY-Nqz7zz1NGSWwwf9DdQ8ZF4_yUYcNXlrQ/exec";
 
 document.addEventListener("DOMContentLoaded", () => {
     const form = document.getElementById("es9-form");
@@ -178,6 +178,12 @@ Estructura deseada:
             const tipsDiv = document.getElementById("tips-content");
             if (tipsDiv) {
                 tipsDiv.textContent = dataObj.ia_feedbackEmprendedor || "Idalí pronto se pondrá en contacto contigo.";
+            }
+            
+            // Cambiar título principal a éxito
+            const mainTitle = document.getElementById("main-title");
+            if (mainTitle) {
+                mainTitle.textContent = "¡Tu proyecto ha sido registrado con éxito!";
             }
 
             // Mostrar el cuadro de éxito
