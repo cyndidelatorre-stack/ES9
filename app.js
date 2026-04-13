@@ -82,16 +82,25 @@ Estructura deseada:
         const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
 
         try {
-            const response = await fetch(endpoint, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(payload)
-            });
-
-            if (!response.ok) {
-                throw new Error("HTTP Status " + response.status);
+            let response;
+            let retries = 3;
+            for(let i=0; i<retries; i++) {
+                response = await fetch(endpoint, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (response.ok) break; // Exito
+                
+                if (response.status === 429 && i < retries - 1) {
+                    // Esperar 2, 4 segundos... y reintentar
+                    const waitTime = Math.pow(2, i + 1) * 1000;
+                    console.warn(`Límite 429 de Gemini alcanzado. Reintentando en ${waitTime/1000}s...`);
+                    await new Promise(r => setTimeout(r, waitTime));
+                } else {
+                    throw new Error("HTTP Status " + response.status);
+                }
             }
 
             const result = await response.json();
