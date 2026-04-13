@@ -1,7 +1,7 @@
 // app.js
 
 // CONFIGURACIÓN: Aquí debes colocar la URL web que te de Google Apps Script al hacer "Deploy as web app" (Ejecución como tú, acceso: cualquiera)
-const APPSCRIPT_WEBHOOK_URL = "URL_APP_SCRIPT_AQUI";
+const APPSCRIPT_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbx5CZAhUkna6qWF6x7IxXgt6DyrYX-I4oI-bP4PTq7Y5xEAhYCh-zN01uZGbqOv66Dusw/exec";
 
 document.addEventListener("DOMContentLoaded", () => {
     const form = document.getElementById("es9-form");
@@ -14,10 +14,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Lógica "Segunda Oportunidad": Autoguardado en LocalStorage (Navegador Seguro)
     const formKey = "es9_form_draft";
-    
+
     // 1. Cargar datos si el usuario regresa
     const savedData = localStorage.getItem(formKey);
-    if(savedData) {
+    if (savedData) {
         try {
             const parsed = JSON.parse(savedData);
             Object.keys(parsed).forEach(key => {
@@ -63,17 +63,14 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
             const respuesta = await fetch(APPSCRIPT_WEBHOOK_URL, {
                 method: "POST",
-                mode: "no-cors", 
-                // Nota: Usar no-cors hace que no podamos leer el json de vuelta del Apps Script en muchos casos si no configuramos bien los headers allá. 
-                // Lo recomendable con Fetch + AppsScript es usar text/plain en el contenido o x-www-form-urlencoded
                 headers: {
                     "Content-Type": "text/plain",
                 },
                 body: JSON.stringify(dataObj)
             });
 
-            // Si llegamos aquí sin excepción grave, asumimos éxito inicial (por limitantes de CORS con redirections de GAS)
-            // Una mejor práctica sería que el backend retorne JSONP o usar x-www-form-urlencoded nativo para leer status 200 de pre-flight.
+            // Se asume que el redirect 302 funciona si Content-Type es un "simple request"
+            const data = await respuesta.json();
 
             hideLoader();
             successBox.classList.remove("hidden");
@@ -83,8 +80,10 @@ document.addEventListener("DOMContentLoaded", () => {
             // Limpiar localStorage ya que se envió con éxito
             localStorage.removeItem(formKey);
             
-            // Si el backend devolviera el link de PDF de forma síncrona aquí lo inyectaríamos
-            // downloadBtn.href = data.pdfUrl;
+            // Asignar dinámicamente la URL al botón de descarga si el servidor lo devolvió
+            if(data && data.pdfUrl) {
+                downloadBtn.href = data.pdfUrl;
+            }
 
         } catch (error) {
             console.error("Error submitting form:", error);
