@@ -1,289 +1,104 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Emprende por un Cambio Social - Registro</title>
-    <!-- Configuración SEO y Meta -->
-    <meta name="description" content="Formulario de registro para emprendedores. Postula tu proyecto para Emprende por un Cambio Social.">
-    <!-- Google Fonts: Inter -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-    <div id="loader" class="loader-overlay hidden">
-        <div class="spinner"></div>
-        <p id="loader-text">Procesando información...</p>
-    </div>
+// app.js
 
-    <!-- Header con marca -->
-    <header class="masthead">
-        <div class="container">
-            <h1 class="brand-title">Emprende por un Cambio Social</h1>
-            <p class="brand-subtitle">Lienzo de Modelo de Negocio Social - ES9</p>
-        </div>
-    </header>
+// CONFIGURACIÓN: Aquí debes colocar la URL web que te de Google Apps Script al hacer "Deploy as web app" (Ejecución como tú, acceso: cualquiera)
+const APPSCRIPT_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbx5CZAhUkna6qWF6x7IxXgt6DyrYX-I4oI-bP4PTq7Y5xEAhYCh-zN01uZGbqOv66Dusw/exec";
 
-    <main class="container">
-        <!-- Card Principal -->
-        <section class="form-card">
-            <div class="form-intro">
-                <h2>Registra tu Proyecto</h2>
-                <p>Tu progreso se guardará automáticamente en este dispositivo para que no pierdas información.</p>
-            </div>
+document.addEventListener("DOMContentLoaded", () => {
+    const form = document.getElementById("es9-form");
+    const loader = document.getElementById("loader");
+    const loaderText = document.getElementById("loader-text");
+    const successBox = document.getElementById("success-message");
+    const errorBox = document.getElementById("error-message");
+    const errorText = document.getElementById("error-text");
+    const downloadBtn = document.getElementById("download-btn");
 
-            <form id="es9-form">
-                
-                <!-- Sección: Identificación -->
-                <div class="form-section">
-                    <h3 class="section-title">Datos del Emprendedor y Proyecto</h3>
-                    
-                    <div class="form-group grid-2">
-                        <div class="input-wrapper">
-                            <label for="email">Correo Electrónico *</label>
-                            <input type="email" id="email" name="email" required placeholder="tu@correo.com">
-                        </div>
-                        <div class="input-wrapper">
-                            <label for="nombre">Nombre Completo *</label>
-                            <input type="text" id="nombre" name="nombre" required placeholder="Ingresa tu nombre">
-                        </div>
-                    </div>
+    // Lógica "Segunda Oportunidad": Autoguardado en LocalStorage (Navegador Seguro)
+    const formKey = "es9_form_draft";
 
-                    <div class="form-group">
-                        <label for="nombre_proyecto">Nombre del Proyecto *</label>
-                        <input type="text" id="nombre_proyecto" name="nombre_proyecto" required placeholder="Ej. Agua para Todos">
-                    </div>
+    // 1. Cargar datos si el usuario regresa
+    const savedData = localStorage.getItem(formKey);
+    if (savedData) {
+        try {
+            const parsed = JSON.parse(savedData);
+            Object.keys(parsed).forEach(key => {
+                const input = form.querySelector(`[name="${key}"]`);
+                if (input) input.value = parsed[key];
+            });
+        } catch (e) {
+            console.error("Error leyendo autoguardado");
+        }
+    }
 
-                    <div class="form-group">
-                        <label for="objetivo">Objetivo: En una frase corta ¿Qué quieres lograr con tu proyecto? *</label>
-                        <input type="text" id="objetivo" name="objetivo" required placeholder="Ej. Reducir la contaminación por plástico en la costa">
-                    </div>
-                </div>
+    // 2. Guardar automáticamente mientras escribe
+    form.addEventListener("input", () => {
+        const formData = new FormData(form);
+        const dataObj = {};
+        formData.forEach((value, key) => dataObj[key] = value);
+        localStorage.setItem(formKey, JSON.stringify(dataObj));
+    });
 
-                <div class="custom-hr"></div>
+    // Envío de Formulario
+    form.addEventListener("submit", async (e) => {
+        e.preventDefault();
 
-                <!-- 1. El Problema -->
-                <div class="form-section">
-                    <h3 class="section-title">1. El Problema</h3>
-                    <p class="section-desc">¿Qué le duele a tu comunidad o a tu contexto?</p>
-                    
-                    <div class="form-group">
-                        <label for="q1_1">¿Qué es lo que está mal en tu ciudad, colonia o entorno y por qué te preocupa?</label>
-                        <textarea id="q1_1" name="q1_1" rows="3"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="q1_2">¿Qué evidencia (datos o hechos) demuestra que este problema es crítico hoy?</label>
-                        <textarea id="q1_2" name="q1_2" rows="3"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="q1_3">¿A quiénes les afecta más este problema? (ej. niños, abuelitos, jefas de familia) (contexto específico geográfico/social)</label>
-                        <textarea id="q1_3" name="q1_3" rows="3"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="q1_4">¿Cómo intentan las personas resolverlo hoy y por qué no ha funcionado?</label>
-                        <textarea id="q1_4" name="q1_4" rows="3"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="q1_5">Si no hacemos nada, ¿qué es lo peor que podría pasar en poco tiempo?</label>
-                        <textarea id="q1_5" name="q1_5" rows="3"></textarea>
-                    </div>
-                </div>
+        if (APPSCRIPT_WEBHOOK_URL === "URL_APP_SCRIPT_AQUI") {
+            // MODO DEMO: Simular flujo porque no hay webhook real
+            showLoader("Simulando envío a inteligencia artificial...");
+            setTimeout(() => {
+                hideLoader();
+                successBox.classList.remove("hidden");
+                errorBox.classList.add("hidden");
+                form.querySelectorAll("input, textarea, button[type='submit']").forEach(el => el.disabled = true);
+            }, 2000);
+            return;
+        }
 
-                <!-- 2. Propuesta de Valor -->
-                <div class="form-section">
-                    <h3 class="section-title">2. Propuesta de valor</h3>
-                    <p class="section-desc">¿Por qué tu idea es buena?</p>
-                    
-                    <div class="form-group">
-                        <label for="q2_1">En una frase: ¿Cómo vas a ayudar a que la vida de esas personas sea mejor?</label>
-                        <textarea id="q2_1" name="q2_1" rows="2"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="q2_2">¿Qué tiene de especial tu idea que no tengan las demás?</label>
-                        <textarea id="q2_2" name="q2_2" rows="3"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="q2_3">¿Por qué la gente va a confiar en ti para solucionar esto?</label>
-                        <textarea id="q2_3" name="q2_3" rows="3"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="q2_4">¿Cómo te aseguras de que tu ayuda realmente respete y escuche a las personas?</label>
-                        <textarea id="q2_4" name="q2_4" rows="3"></textarea>
-                    </div>
-                </div>
+        const formData = new FormData(form);
+        const dataObj = {};
+        formData.forEach((value, key) => dataObj[key] = value);
+        dataObj.action = "submit";
 
-                <!-- 3. Innovación Social -->
-                <div class="form-section">
-                    <h3 class="section-title">3. Innovación social – Tu diferente</h3>
-                    <p class="section-desc">¿Qué haces distinto?</p>
-                    
-                    <div class="form-group">
-                        <label for="q3_1">¿Qué haces tú que nadie más en la zona se haya atrevido a hacer?</label>
-                        <textarea id="q3_1" name="q3_1" rows="3"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="q3_2">¿Usas alguna idea nueva o una forma diferente de trabajar que ahorre tiempo o dinero? (Tecnología, procesos, innovación, métodos)</label>
-                        <textarea id="q3_2" name="q3_2" rows="3"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="q3_3">¿Cómo invitas a las personas a que ellas mismas ayuden a resolver el problema?</label>
-                        <textarea id="q3_3" name="q3_3" rows="3"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="q3_4">¿Cómo haces para que tu solución llegue a lugares donde nadie más llega?</label>
-                        <textarea id="q3_4" name="q3_4" rows="3"></textarea>
-                    </div>
-                </div>
+        showLoader("Enviando proyecto y evaluando con Inteligencia Artificial... (Esto puede tomar unos segundos)");
 
-                <!-- 4. Segmento y ecosistema -->
-                <div class="form-section">
-                    <h3 class="section-title">4. Segmento y ecosistema</h3>
-                    <p class="section-desc">¿Con quién trabajas?</p>
-                    
-                    <div class="form-group">
-                        <label for="q4_1">Describe quiénes son las personas que van a recibir la ayuda (Beneficiarios directos e indirectos)</label>
-                        <textarea id="q4_1" name="q4_1" rows="3"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="q4_2">Describe Quién toma la decisión de uso y quien paga por tu producto o servicio (Clientes/Aliados estratégicos)</label>
-                        <textarea id="q4_2" name="q4_2" rows="3"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="q4_3">Describe 3 personas u organizaciones de tu comunidad que consideres tus "brazos derechos" (Financiadores, expertos, ONG, AC)</label>
-                        <textarea id="q4_3" name="q4_3" rows="3"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="q4_4">¿Qué podría frenar tu operación? (Permisos, trámites, regulaciones, miedos culturales, etc)</label>
-                        <textarea id="q4_4" name="q4_4" rows="3"></textarea>
-                    </div>
-                </div>
+        try {
+            const respuesta = await fetch(APPSCRIPT_WEBHOOK_URL, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "text/plain",
+                },
+                body: JSON.stringify(dataObj)
+            });
 
-                <!-- 5. Actividades clave -->
-                <div class="form-section">
-                    <h3 class="section-title">5. Actividades clave</h3>
-                    <p class="section-desc">¿Cómo lo haces? (Manos a la obra)</p>
-                    
-                    <div class="form-group">
-                        <label for="q5_1">Menciona 3 actividades críticas que ocurren cada día para que el proyecto funcione</label>
-                        <textarea id="q5_1" name="q5_1" rows="3"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="q5_2">¿Qué es lo primero que haces desde que te despiertas para que el proyecto camine?</label>
-                        <textarea id="q5_2" name="q5_2" rows="2"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="q5_3">¿Cuál es la prueba más sencilla que puedes hacer hoy mismo para ver si tu idea funciona?</label>
-                        <textarea id="q5_3" name="q5_3" rows="3"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="q5_4">¿Qué herramientas, materiales o personas son indispensables para empezar mañana?</label>
-                        <textarea id="q5_4" name="q5_4" rows="3"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="q5_5">Cuéntame el camino: Desde que una persona te busca hasta que recibe tu ayuda, ¿qué pasos sigue?</label>
-                        <textarea id="q5_5" name="q5_5" rows="4"></textarea>
-                    </div>
-                </div>
+            // Se asume que el redirect 302 funciona si Content-Type es un "simple request"
+            const data = await respuesta.json();
 
-                <!-- 6. El Cambio / Impacto -->
-                <div class="form-section">
-                    <h3 class="section-title">6. El Cambio / Impacto</h3>
-                    <p class="section-desc">¿Cómo sabemos que funcionó?</p>
-                    
-                    <div class="form-group">
-                        <label for="q6_1">¿Cuál es la señal principal de que tu proyecto está siendo un éxito? (Evidencia del cambio: encuestas, sensores, observación)</label>
-                        <textarea id="q6_1" name="q6_1" rows="3"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="q6_2">¿Cómo vas a anotar o contar los resultados para demostrar que estás cumpliendo?</label>
-                        <textarea id="q6_2" name="q6_2" rows="3"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="q6_3">¿Cómo te das cuenta si una persona realmente cambió su vida después de tu ayuda?</label>
-                        <textarea id="q6_3" name="q6_3" rows="3"></textarea>
-                    </div>
-                </div>
+            hideLoader();
+            successBox.classList.remove("hidden");
+            errorBox.classList.add("hidden");
+            // Ocultar acciones
+            form.querySelectorAll("button[type='submit']").forEach(el => el.style.display = 'none');
+            // Limpiar localStorage ya que se envió con éxito
+            localStorage.removeItem(formKey);
+            
+            // Asignar dinámicamente la URL al botón de descarga si el servidor lo devolvió
+            if(data && data.pdfUrl) {
+                downloadBtn.href = data.pdfUrl;
+            }
 
-                <!-- 7. Estructura de costos -->
-                <div class="form-section">
-                    <h3 class="section-title">7. Estructura de costos</h3>
-                    <p class="section-desc">El dinero (¿Cómo se mantiene solo?)</p>
-                    
-                    <div class="form-group">
-                        <label for="q7_1">¿Cuáles son los gastos más grandes que tienes que pagar cada mes para operar y cómo planeas cubrirlos por un año?</label>
-                        <textarea id="q7_1" name="q7_1" rows="3"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="q7_2">¿De dónde va a salir el dinero / de dónde vienen tus ingresos? (Vendes algo, pides cooperación, apoyo)</label>
-                        <textarea id="q7_2" name="q7_2" rows="3"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="q7_3">¿Cuánto te cuesta ayudar a una sola persona, realizar un primer piloto, etc.?</label>
-                        <textarea id="q7_3" name="q7_3" rows="3"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="q7_4">Si te sobra un poco de dinero, ¿en qué lo vas a usar para que el proyecto crezca?</label>
-                        <textarea id="q7_4" name="q7_4" rows="3"></textarea>
-                    </div>
-                </div>
+        } catch (error) {
+            console.error("Error submitting form:", error);
+            hideLoader();
+            errorBox.classList.remove("hidden");
+            errorText.textContent = "Ocurrió un error al contactar el servidor. Por favor intenta de nuevo.";
+        }
+    });
 
-                <!-- 8. Sostenibilidad -->
-                <div class="form-section">
-                    <h3 class="section-title">8. Sostenibilidad - Mirando al Futuro</h3>
-                    <p class="section-desc">¿Qué viene después?</p>
-                    
-                    <div class="form-group">
-                        <label for="q8_1">¿Qué viene?: Si el clima cambia o la situación económica del pueblo empeora, ¿tu proyecto podría seguir funcionando?</label>
-                        <textarea id="q8_1" name="q8_1" rows="3"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="q8_2">Riesgos: ¿Hay algo que podría pasar en el futuro que haga que tu idea ya no sirva?</label>
-                        <textarea id="q8_2" name="q8_2" rows="3"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="q8_3">Efectos: ¿Tu idea podría causar algún problema sin querer a otras personas o a la naturaleza?</label>
-                        <textarea id="q8_3" name="q8_3" rows="3"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="q8_4">El sueño: Si todo sale bien, ¿cómo se verá tu comunidad en 5 años gracias a ti?</label>
-                        <textarea id="q8_4" name="q8_4" rows="3"></textarea>
-                    </div>
-                </div>
+    function showLoader(msg) {
+        loaderText.textContent = msg;
+        loader.classList.remove("hidden");
+    }
 
-                <!-- Submit Area -->
-                <div class="form-actions text-center mt-xl">
-                    <p class="help-text">Al enviar tu proyecto, se generará un resumen ejecutivo de tu propuesta que podrás descargar de inmediato.</p>
-                    <button type="submit" class="btn btn-primary btn-large">
-                        Enviar Proyecto y Continuar ➔
-                    </button>
-                </div>
-
-                <!-- Feedback Visual Oculto por Defecto -->
-                <div id="success-message" class="hidden">
-                    <div class="msg-box success">
-                        <h3>¡Proyecto recibido con éxito!</h3>
-                        <p>En tu correo recibirás noticias de Idaly con los siguientes pasos para tu participación. Por lo pronto, descarga aquí el resumen de tu proyecto:</p>
-                        <a id="download-btn" href="#" target="_blank" class="btn btn-primary">Descargar mi One-Pager</a>
-                    </div>
-                </div>
-                <div id="error-message" class="hidden">
-                    <div class="msg-box error">
-                        <h3>Ocurrió un error</h3>
-                        <p id="error-text">No pudimos enviar tu proyecto. Por favor, intenta de nuevo.</p>
-                    </div>
-                </div>
-            </form>
-        </section>
-    </main>
-
-    <footer class="mastfoot">
-        <div class="container">
-            <p>Emprende por un Cambio Social © 2026. Todos los derechos reservados.</p>
-        </div>
-    </footer>
-
-    <script src="app.js"></script>
-</body>
-</html>
+    function hideLoader() {
+        loader.classList.add("hidden");
+    }
+});
