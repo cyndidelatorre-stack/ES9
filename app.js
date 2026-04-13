@@ -54,14 +54,14 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        // EVITAR DOBLE SUBMIT Y BLOQUEAR PANTALLA MIENTRAS CARGA
-        form.querySelectorAll("input, textarea, button[type='submit']").forEach(el => el.disabled = true);
-        errorBox.classList.add("hidden");
-
         const formData = new FormData(form);
         const dataObj = {};
         formData.forEach((value, key) => dataObj[key] = value);
         dataObj.action = "submit";
+
+        // EVITAR DOBLE SUBMIT Y BLOQUEAR PANTALLA MIENTRAS CARGA (Después de extraer datos)
+        form.querySelectorAll("input, textarea, button[type='submit']").forEach(el => el.disabled = true);
+        errorBox.classList.add("hidden");
 
         showLoader("Preparando tus recomendaciones y generando tu One-Pager...");
 
