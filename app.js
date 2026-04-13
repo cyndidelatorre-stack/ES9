@@ -1,6 +1,8 @@
 // app.js
-// CONFIGURACIÓN: URL de la Aplicación Web de Google Apps Script
-const APPSCRIPT_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbx5CZAhUkna6qWF6x7IxXgt6DyrYX-I4oI-bP4PTq7Y5xEAhYCh-zN01uZGbqOv66Dusw/exec";
+
+// CONFIGURACIÓN: URL del Webhook "Deploy as web app"
+// ID de Librería futura referencia: https://script.google.com/macros/library/d/1wiOg84nIthLICtC12y0uOdjSjpUbkATUwROgHykAUogvXTznv7XOXU2-/2
+const APPSCRIPT_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbxWCjWspyW1wQKLgQ4backB9vAsW0isUzABeQBADcQ4MDdKPEX3AWuYXhyxT8YD_k87KA/exec";
 
 document.addEventListener("DOMContentLoaded", () => {
     const form = document.getElementById("es9-form");
@@ -10,12 +12,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const errorBox = document.getElementById("error-message");
     const errorText = document.getElementById("error-text");
     const downloadBtn = document.getElementById("download-btn");
-    const formActions = document.querySelector(".form-actions");
 
-    // Lógica "Segunda Oportunidad": Autoguardado en el Navegador
+    // Lógica "Segunda Oportunidad": Autoguardado en LocalStorage (Navegador Seguro)
     const formKey = "es9_form_draft";
 
-    // 1. Recuperar información si el usuario refresca la página
+    // 1. Cargar datos si el usuario regresa
     const savedData = localStorage.getItem(formKey);
     if (savedData) {
         try {
@@ -25,11 +26,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (input) input.value = parsed[key];
             });
         } catch (e) {
-            console.error("Error recuperando autoguardado");
+            console.error("Error leyendo autoguardado");
         }
     }
 
-    // 2. Guardar automáticamente mientras el emprendedor escribe
+    // 2. Guardar automáticamente mientras escribe
     form.addEventListener("input", () => {
         const formData = new FormData(form);
         const dataObj = {};
@@ -37,53 +38,72 @@ document.addEventListener("DOMContentLoaded", () => {
         localStorage.setItem(formKey, JSON.stringify(dataObj));
     });
 
-    // 3. Envío de Formulario
+    // Envío de Formulario
     form.addEventListener("submit", async (e) => {
         e.preventDefault();
+
+        if (APPSCRIPT_WEBHOOK_URL === "URL_APP_SCRIPT_AQUI") {
+            // MODO DEMO: Simular flujo porque no hay webhook real
+            showLoader("Simulando envío a inteligencia artificial...");
+            setTimeout(() => {
+                hideLoader();
+                successBox.classList.remove("hidden");
+                errorBox.classList.add("hidden");
+                form.querySelectorAll("input, textarea, button[type='submit']").forEach(el => el.disabled = true);
+            }, 2000);
+            return;
+        }
+
+        // EVITAR DOBLE SUBMIT Y BLOQUEAR PANTALLA MIENTRAS CARGA
+        form.querySelectorAll("input, textarea, button[type='submit']").forEach(el => el.disabled = true);
+        errorBox.classList.add("hidden");
 
         const formData = new FormData(form);
         const dataObj = {};
         formData.forEach((value, key) => dataObj[key] = value);
         dataObj.action = "submit";
 
-        // MENSAJE EMPÁTICO (Sin mencionar IA)
         showLoader("Preparando tus recomendaciones y generando tu One-Pager...");
 
         try {
-            // Enviamos con 'no-cors' para asegurar que los datos lleguen a Google Sheets
-            await fetch(APPSCRIPT_WEBHOOK_URL, {
+            const respuesta = await fetch(APPSCRIPT_WEBHOOK_URL, {
                 method: "POST",
-                mode: "no-cors", 
-                headers: {
-                    "Content-Type": "text/plain",
-                },
                 body: JSON.stringify(dataObj)
             });
 
-            // Simulamos un breve tiempo de procesamiento para el PDF
-            setTimeout(() => {
-                hideLoader();
+            // Leer respuesta
+            const data = await respuesta.json();
+
+            hideLoader();
+
+            if (data && data.status === "error") {
+                // Backend tuvo problema
+                errorBox.classList.remove("hidden");
+                errorText.textContent = "⚙️ Error en proceso: " + (data.message || "Por favor revisa la consola o permisos de Apps Script.");
+                // REACTIVAR EL FORMULARIO YA QUE NO TUVO EXITO
+                form.querySelectorAll("input, textarea, button[type='submit']").forEach(el => el.disabled = false);
+            } else if (data && data.status === "success") {
                 successBox.classList.remove("hidden");
                 errorBox.classList.add("hidden");
+                form.querySelectorAll("button[type='submit']").forEach(el => el.style.display = 'none');
                 
-                // Ocultamos los botones de envío originales
-                if (formActions) formActions.classList.add("hidden");
-                
-                // Limpiar el borrador local tras el envío exitoso
+                // Limpiar localStorage SOLAMENTE SI FUE EXITOSO
                 localStorage.removeItem(formKey);
-
-                // Configuración del botón de descarga empático
-                downloadBtn.addEventListener("click", (event) => {
-                    event.preventDefault();
-                    alert("¡Proyecto recibido! Tu One-Pager se está terminando de procesar. En un par de minutos lo recibirás en tu correo con las recomendaciones de Idalí.");
-                });
-            }, 4000);
+                
+                // Asignar PDF dinámico
+                if(data.pdfUrl) {
+                    downloadBtn.href = data.pdfUrl;
+                }
+            } else {
+                throw new Error("Respuesta inválida del servidor");
+            }
 
         } catch (error) {
-            console.error("Error en el envío:", error);
+            console.error("Error submitting form:", error);
             hideLoader();
             errorBox.classList.remove("hidden");
-            errorText.textContent = "Hubo un problema al conectar con el servidor. Por favor, intenta de nuevo.";
+            errorText.textContent = "Ocurrió un error al enviar el formulario (Red o permisos denegados). Por favor verifica tu URL.";
+            form.querySelectorAll("input, textarea, button[type='submit']").forEach(el => el.disabled = false);
         }
     });
 
