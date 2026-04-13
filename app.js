@@ -2,7 +2,7 @@
 
 // CONFIGURACIÓN: URL del Webhook "Deploy as web app"
 // ID de Librería futura referencia: https://script.google.com/macros/library/d/1wiOg84nIthLICtC12y0uOdjSjpUbkATUwROgHykAUogvXTznv7XOXU2-/2
-const APPSCRIPT_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbyEb1UFDDTc7VSiPz-Swd4IDubIi_oaDZkWT4wW7qZwed5Q8RqzjPHfFm4s_GR2zGRhdw/exec";
+const APPSCRIPT_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbx_RgGeCGzLZiDY75wUzSrAM6IKB42TmlgjI5LGtcp25SYOWHhwqnACLyMnu0gqnZoe6A/exec";
 
 document.addEventListener("DOMContentLoaded", () => {
     const form = document.getElementById("es9-form");
